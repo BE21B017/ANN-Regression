@@ -1,0 +1,120 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+insurance_df = pd.read_csv('https://raw.githubusercontent.com/ammishra08/MachineLearning/master/Datasets/insurance.csv')
+display(insurance_df)
+
+insurance_df.isnull().sum()
+
+insurance_df['sex'].drop_duplicates()
+
+insurance_df['smoker'].drop_duplicates()
+
+insurance_df['region'].drop_duplicates()
+
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+
+# Training the LabelEncoder preprocessing model with unique values 
+le.fit(insurance_df['sex'].drop_duplicates())
+
+insurance_df['sex'] = le.transform(insurance_df['sex'])
+
+# Training the LabelEncoder preprocessing model with unique values 
+le.fit(insurance_df['smoker'].drop_duplicates())
+insurance_df['smoker'] = le.transform(insurance_df['smoker'])
+
+# Training the LabelEncoder preprocessing model with unique values 
+le.fit(insurance_df['region'].drop_duplicates())
+insurance_df['region'] = le.transform(insurance_df['region'])
+
+# Count of Smoker & Non-Smoker
+sns.catplot(x = 'smoker', kind = 'count', data = insurance_df, palette = 'magma')
+
+insurance_df['smoker'].value_counts()
+
+plt.figure(figsize = (15,8))
+sns.distplot(insurance_df['charges'], color = 'lightgreen')
+plt.show()
+
+### Analysis of Distribution b/w BMI & Charges
+plt.style.use("ggplot")
+plt.figure(figsize = (12,8))
+sns.scatterplot( x = "bmi", y = "charges", data = insurance_df, hue = 'smoker')
+
+plt.style.use("ggplot")
+sns.lmplot( x = "bmi", y = "charges", data = insurance_df, hue = 'smoker', markers = ["o", "x"], height=7)
+
+plt.figure(figsize = (11,9))
+sns.heatmap(insurance_df.corr(), annot = True, cmap = 'RdYlGn')
+
+X = insurance_df.drop('charges', axis = 1)
+X
+
+Y = insurance_df['charges']
+
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size = 0.2, random_state = 0)
+
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import RMSprop
+
+def build_model():
+    # Sequential Neural Network - FeedForward NN
+    model = Sequential()
+    # Units = Num of Neurons (2 * pow(n)), input shape = num of features.
+    model.add(Dense(units = 128, activation = 'relu', input_shape = [len(X.keys())]))
+    # Hidden Layer - I
+    model.add(Dense(units = 256, activation = 'relu'))
+    # Hidden Layer - II
+    model.add(Dense(units = 512, activation = 'relu'))
+    # Output Layer - Regression
+    model.add(Dense(units = 1))
+    
+    # Optimizers - To converge the loss
+    optimizers = RMSprop(learning_rate = 0.001)
+
+    # Model Compiler
+    model.compile(loss = 'mean_squared_error', optimizer = optimizers, metrics = ['mean_squared_error',
+                                                                                  'mean_absolute_error'])
+    return model
+
+model = build_model()
+
+model.summary()
+
+# epochs = Number of Iterations
+# batch size = samples per steps in each epochs
+history = model.fit(x_train, y_train, epochs = 700, batch_size = 25, validation_split = 0.2)
+
+pd.DataFrame(history.history)
+
+pd.DataFrame(history.history)[['mean_squared_error', 'val_mean_squared_error']].plot()
+
+model.evaluate(x_test, y_test)
+
+# Yhat
+predictions = model.predict(x_test)
+
+from sklearn.metrics import r2_score
+# coeff of determination (0-1)
+r2_score(y_test, predictions)
+
+from sklearn.metrics import r2_score
+# coeff of determination (0-1) 
+# variance of predicted o/p from actual o/p
+r2_score(y_test, predictions)
+
+# RMSE 
+from sklearn.metrics import mean_squared_error
+# MSE
+np.sqrt(mean_squared_error(y_test, predictions))
+
+x_new = [[29,	1,	37.61,	1,	1,	3]]
+np.round(model.predict(x_new))
+
+
+
